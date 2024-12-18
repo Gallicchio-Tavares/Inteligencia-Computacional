@@ -118,15 +118,17 @@ def run_experiments():
                 rate_crossover, rate_mutacao, fitness_method=metodo, elitism=False, steady_state=True, no_duplicates=False
             )
             resultado[metodo].append(best_solutions)
+        resultado[metodo]=np.array(resultado[metodo])
 
     plt.figure(figsize=(10, 6)) #! parte do gráfico em si
     for metodo in metodos_fitness:
-        media_melhor = np.mean(resultado[metodo], axis=0)
-        contagem_noves = []
-        for media_geração in media_melhor:
-            contagem_noves.append(count_nines_after_decimal(media_geração))
-        print(contagem_noves)
-        plt.plot(range(geracoes), contagem_noves, label=f'Aptidão: {metodo.capitalize()}')
+        media_contagem_noves = []
+        for i in range(resultado[metodo].shape[1]):
+            contagem_noves = []
+            for experimento in resultado[metodo][:,i]:
+                contagem_noves.append(count_nines_after_decimal(experimento))
+            media_contagem_noves.append(np.mean(contagem_noves))
+        plt.plot(range(geracoes), media_contagem_noves, label=f'Aptidão: {metodo.capitalize()}')
 
     plt.xlabel('Gerações')
     plt.ylabel('Média das Melhores Soluções')
