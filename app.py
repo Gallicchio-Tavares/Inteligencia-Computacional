@@ -1,6 +1,17 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
+def count_nines_after_decimal(number:float):
+    number -= int(number)
+    count = 0
+    while True:
+        number*=10
+        if int(number)!=9:
+            break
+        number -= int(number)
+        count+=1
+    return count
+
 def f6(x, y):
     numerador = (np.sin(np.sqrt(x**2 + y**2)))**2 - 0.5
     denominador = (1 + 0.001 * (x**2 + y**2))**2
@@ -111,7 +122,11 @@ def run_experiments():
     plt.figure(figsize=(10, 6)) #! parte do gráfico em si
     for metodo in metodos_fitness:
         media_melhor = np.mean(resultado[metodo], axis=0)
-        plt.plot(range(geracoes), media_melhor, label=f'Aptidão: {metodo.capitalize()}')
+        contagem_noves = []
+        for media_geração in media_melhor:
+            contagem_noves.append(count_nines_after_decimal(media_geração))
+        print(contagem_noves)
+        plt.plot(range(geracoes), contagem_noves, label=f'Aptidão: {metodo.capitalize()}')
 
     plt.xlabel('Gerações')
     plt.ylabel('Média das Melhores Soluções')
