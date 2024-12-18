@@ -73,11 +73,13 @@ def genetic_algorithm(tamanho_pop, geracoes, limite_crom, rate_crossover, rate_m
 
         populacao = np.array(nova_pop[:tamanho_pop])# n exceder o tamanho
 
-        if steady_state and no_duplicates:
-            populacao = np.unique(populacao, axis=0)
+        if steady_state:
+            if no_duplicates:
+                populacao = np.unique(populacao, axis=0)
             while len(populacao) < tamanho_pop:
                 new_individual = np.random.uniform(limite_crom[0], limite_crom[1], size=2)
                 populacao = np.vstack([populacao, new_individual])
+                
 
         if elitism: #aki vai inserir o melhor individuo
             populacao[np.random.randint(len(populacao))] = melhor_individuo
@@ -102,7 +104,7 @@ def run_experiments():
             print(f"Rodando experimento {exp+1} para aptidão: {metodo}")
             best_solutions = genetic_algorithm(
                 tamanho_pop, geracoes, limite_crom,
-                rate_crossover, rate_mutacao, fitness_method=metodo, elitism=False
+                rate_crossover, rate_mutacao, fitness_method=metodo, elitism=False, steady_state=True, no_duplicates=False
             )
             resultado[metodo].append(best_solutions)
 
