@@ -115,12 +115,12 @@ def run_experiments():
             print(f"Rodando experimento {exp+1} para aptidão: {metodo}")
             best_solutions = genetic_algorithm(
                 tamanho_pop, geracoes, limite_crom,
-                rate_crossover, rate_mutacao, fitness_method=metodo, elitism=False, steady_state=False, no_duplicates=False
+                rate_crossover, rate_mutacao, fitness_method=metodo, elitism=False, steady_state=False, no_duplicates=True
             )
             resultado[metodo].append(best_solutions)
         resultado[metodo]=np.array(resultado[metodo])
 
-    
+    colors = {'evaluation': 'blue', 'windowing': 'green', 'normalization': 'red'}
     for metodo in metodos_fitness:
         plt.figure(figsize=(10, 6)) #! parte do gráfico em si
         media_contagem_noves = []
@@ -129,10 +129,10 @@ def run_experiments():
             for experimento in resultado[metodo][:,i]:
                 contagem_noves.append(count_nines_after_decimal(experimento))
             media_contagem_noves.append(np.mean(contagem_noves))
-        plt.plot(range(geracoes), media_contagem_noves)
+        plt.plot(range(geracoes), media_contagem_noves, color=colors[metodo])
 
         plt.xlabel('Gerações')
-        plt.ylabel('Média de 9 por experimento')
+        plt.ylabel('Média de 9 após o decimal por experimento')
         plt.title(f'Método de Aptidão: {metodo.capitalize()}')
         plt.grid(True);
     plt.show()
