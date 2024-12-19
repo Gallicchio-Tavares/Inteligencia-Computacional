@@ -51,7 +51,7 @@ def mutate(individuo, rate_mutacao, limite_crom): #faz as mutacoes
     return individuo
 
 def genetic_algorithm(tamanho_pop, geracoes, limite_crom, rate_crossover, rate_mutacao, 
-                      fitness_method='evaluation', elitism=True, steady_state=False, no_duplicates=False): #o nosso AG
+                      fitness_method='evaluation', elitism=True, steady_state=True, no_duplicates=False): #o nosso AG
     populacao = initialize_population(tamanho_pop, limite_crom)
     best_solutions = []
 
