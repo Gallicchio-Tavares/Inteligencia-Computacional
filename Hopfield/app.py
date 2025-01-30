@@ -206,7 +206,80 @@ def select_top_n_hamming_distances(hamming_dist, top_n, decreasing=False):
   return best_comb
 
   
-print(f"3 padrões com maior distância de Hamming: {select_top_n_hamming_distances(all_hamming_distances, 3)}")
-print(f"3 padrões com menor distância de Hamming: {select_top_n_hamming_distances(all_hamming_distances, 3, True)}")
-print(f"5 padrões com maior distância de Hamming: {select_top_n_hamming_distances(all_hamming_distances, 5)}")
-print(f"7 padrões com maior distância de Hamming: {select_top_n_hamming_distances(all_hamming_distances, 7)}")
+top_3_best = select_top_n_hamming_distances(all_hamming_distances, 3)
+print(f"3 padrões com maior distância de Hamming: {top_3_best}")
+
+top_3_worst = select_top_n_hamming_distances(all_hamming_distances, 3, True)
+print(f"3 padrões com menor distância de Hamming: {top_3_worst}")
+
+top_5_best = select_top_n_hamming_distances(all_hamming_distances, 5)
+print(f"5 padrões com maior distância de Hamming: {top_5_best}")
+
+top_7_best = select_top_n_hamming_distances(all_hamming_distances, 7)
+print(f"7 padrões com maior distância de Hamming: {top_7_best}")
+
+import random
+def add_noise(pattern, noise_level):
+    noisy_pattern = pattern.copy()
+    num_noisy_bits = int(noise_level * len(pattern))
+    flip_indices = random.sample(range(len(pattern)), num_noisy_bits) # Selecionar randomicamente todos os "num_noisy_bits" a serem invertidos
+    noisy_pattern[flip_indices] = 1 - noisy_pattern[flip_indices]  # Inverter bits
+    return noisy_pattern
+
+plot_matriz(add_noise(digits[0], 0.1)) #Exemplo do dígito 0 com 10% de ruído
+
+
+class HopfieldNetwork:
+  def __init__(self, size):
+    self.size = size
+    self.weights = np.zeros((size, size))
+
+  def train(self, patterns):
+    """Treina a rede com os padrões binários."""
+    for pattern in patterns:
+        p = pattern.reshape(-1, 1) * 2 - 1  # Converter para {-1, 1}
+        self.weights += np.outer(p, p)
+    np.fill_diagonal(self.weights, 0)  # Zerar a diagonal
+
+  def recall(self, pattern, max_iter=10):
+    """Executa o processo de recuperação do padrão."""
+    recalled = pattern.copy()
+    for _ in range(max_iter):
+        recalled = np.sign(self.weights @ recalled) #Multiplicação matricial
+    return (recalled + 1) // 2  # Converter de {-1,1} para {0,1}
+
+def pattern_to_vector(pattern):
+    return np.array([1 if num == 1 else 0 for row in pattern for num in row])
+
+
+#digits_3_best = [pattern_to_vector(digits[d]) for d in top_3_best]
+digits_3_best = [pattern_to_vector(digits[top_3_best[0]]),pattern_to_vector(digits[top_3_best[1]]), pattern_to_vector(digits[top_3_best[2]])]
+print(digits_3_best)
+hopfield = HopfieldNetwork(size=len(digits_3_best[0]))
+hopfield.train(digits_3_best)
+
+noise_levels = [0, 5, 10, 20, 30, 40, 50]
+accuracy_results = []
+
+for noise in noise_levels:
+  correct_recognitions = 0
+  total_tests = 5 * len(top_3_best)  # 5 testes por padrão
+  for pattern in digits_3_best:
+    for _ in range(5):
+      noisy_pattern = add_noise(pattern, noise / 100)
+      recalled_pattern = hopfield.recall(noisy_pattern)
+      if np.array_equal(recalled_pattern, pattern):
+        correct_recognitions += 1
+      else:
+        plot_matriz(np.array(recalled_pattern).reshape(12, 10))
+  accuracy = (correct_recognitions / total_tests) * 100
+  accuracy_results.append(accuracy)
+
+# Plotar gráfico de desempenho
+plt.plot(noise_levels, accuracy_results, marker='o', linestyle='-', label="3 Padrões")
+plt.xlabel("Nível de Ruído (%)")
+plt.ylabel("Percentual de Acerto (%)")
+plt.title("Desempenho da Rede Hopfield na Recuperação de Padrões")
+plt.legend()
+plt.grid()
+plt.show()
