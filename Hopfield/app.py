@@ -154,3 +154,29 @@ def create_digits():
     digits.append(digit_8)
     digits.append(digit_9)
     return digits
+
+
+digits = create_digits()
+
+def plot_matriz(matr):
+  plt.imshow(matr, cmap='gray', interpolation='nearest')
+  plt.colorbar()
+  plt.show()
+
+for i in range(10):
+  plot_matriz(digits[i])
+
+
+def hamming_distance(mat1, mat2):
+  if mat1.shape != mat2.shape:
+        raise ValueError("As matrizes devem ter o mesmo comprimento")
+
+  return np.sum(mat1 != mat2)
+
+for i in range(10):
+  for j in range(10):
+    if i == j:
+      continue
+    print(f"Distância de Hamming entre {i} e {j}:")
+    print(hamming_distance(digits[i], digits[j]))
+  print("\n")
