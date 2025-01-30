@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 
 def create_digits():
     digits = []
-        digit_0 = np.array([
+    digit_0 = np.array([
         [0, 0, 1, 1, 1, 1, 1, 0, 0, 0],
         [0, 0, 1, 0, 0, 0, 1, 0, 0, 0],
         [0, 1, 0, 0, 0, 0, 0, 1, 0, 0],
