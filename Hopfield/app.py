@@ -1,7 +1,9 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import random
+from itertools import combinations
 
-def create_digits():
+def create_digits()->np.ndarray:
     digits = []
     digit_0 = np.array([
         [0, 0, 1, 1, 1, 1, 1, 0, 0, 0],
@@ -153,19 +155,13 @@ def create_digits():
     digits.append(digit_7)
     digits.append(digit_8)
     digits.append(digit_9)
-    return digits
+    return np.array(digits)
 
-
-digits = create_digits()
 
 def plot_matriz(matr):
   plt.imshow(matr, cmap='gray', interpolation='nearest')
   plt.colorbar()
   plt.show()
-
-for i in range(10):
-  plot_matriz(digits[i])
-
 
 def hamming_distance(mat1, mat2):
   if mat1.shape != mat2.shape:
@@ -173,25 +169,12 @@ def hamming_distance(mat1, mat2):
 
   return np.sum(mat1 != mat2)
 
-all_hamming_distances = {}
-for i in range(10):
-  for j in range(10):
-    if i == j or i > j:
-      continue
-    print(f"Distância de Hamming entre {i} e {j}:")
-    all_hamming_distances[(i,j)] = hamming_distance(digits[i], digits[j])
-    print(hamming_distance(digits[i], digits[j]))
-  print("\n")
-
-
-  from itertools import combinations
-
 def select_top_n_hamming_distances(hamming_dist, top_n, decreasing=False):
   allCombinations = list(combinations(range(10), top_n))#Gerar combinações de todos os valores entre 0 e 9, ou seja, (0,1,2); (0,1,3); (0,1,4); ...; (6,8,9); (7,8,9)
   best_comb = None
   best_comb_value = 0
   if decreasing == True:
-    best_comb_value = np.Infinity
+    best_comb_value = np.inf
 
   for comb in allCombinations:
     current_sum = hamming_dist[(comb[0], comb[1])]
@@ -205,20 +188,7 @@ def select_top_n_hamming_distances(hamming_dist, top_n, decreasing=False):
       best_comb_value = current_sum
   return best_comb
 
-  
-top_3_best = select_top_n_hamming_distances(all_hamming_distances, 3)
-print(f"3 padrões com maior distância de Hamming: {top_3_best}")
 
-top_3_worst = select_top_n_hamming_distances(all_hamming_distances, 3, True)
-print(f"3 padrões com menor distância de Hamming: {top_3_worst}")
-
-top_5_best = select_top_n_hamming_distances(all_hamming_distances, 5)
-print(f"5 padrões com maior distância de Hamming: {top_5_best}")
-
-top_7_best = select_top_n_hamming_distances(all_hamming_distances, 7)
-print(f"7 padrões com maior distância de Hamming: {top_7_best}")
-
-import random
 def add_noise(pattern, noise_level):
     noisy_pattern = pattern.copy()
     num_noisy_bits = int(noise_level * len(pattern))
@@ -226,8 +196,11 @@ def add_noise(pattern, noise_level):
     noisy_pattern[flip_indices] = 1 - noisy_pattern[flip_indices]  # Inverter bits
     return noisy_pattern
 
-plot_matriz(add_noise(digits[0], 0.1)) #Exemplo do dígito 0 com 10% de ruído
+def pattern_to_vector(pattern):
+    return np.array([1 if num == 1 else 0 for row in pattern for num in row])
 
+def pattern_to_vector(pattern):
+    return np.array([1 if num == 1 else 0 for row in pattern for num in row])
 
 class HopfieldNetwork:
   def __init__(self, size):
@@ -248,10 +221,6 @@ class HopfieldNetwork:
         recalled = np.sign(self.weights @ recalled) #Multiplicação matricial
     return (recalled + 1) // 2  # Converter de {-1,1} para {0,1}
 
-def pattern_to_vector(pattern):
-    return np.array([1 if num == 1 else 0 for row in pattern for num in row])
-
-
 class HopfieldNetwork:
   def __init__(self, size):
     self.size = size
@@ -271,129 +240,155 @@ class HopfieldNetwork:
         recalled = np.sign(self.weights @ recalled) #Multiplicação matricial
     return (recalled + 1) // 2  # Converter de {-1,1} para {0,1}
 
-def pattern_to_vector(pattern):
-    return np.array([1 if num == 1 else 0 for row in pattern for num in row])
+if __name__ == '__main__':  
+  digits = create_digits()
+
+  for i in range(10):
+    plot_matriz(digits[i])
+
+  plot_matriz(add_noise(digits[0], 0.1)) #Exemplo do dígito 0 com 10% de ruído
+
+  all_hamming_distances = {}
+  for i in range(10):
+    for j in range(10):
+      if i >= j:
+        continue
+      print(f"Distância de Hamming entre {i} e {j}:")
+      all_hamming_distances[(i,j)] = hamming_distance(digits[i], digits[j])
+      print(hamming_distance(digits[i], digits[j]))
+    print("\n")
+    
+  top_3_best = select_top_n_hamming_distances(all_hamming_distances, 3)
+  print(f"3 padrões com maior distância de Hamming: {top_3_best}")
+
+  top_3_worst = select_top_n_hamming_distances(all_hamming_distances, 3, True)
+  print(f"3 padrões com menor distância de Hamming: {top_3_worst}")
+
+  top_5_best = select_top_n_hamming_distances(all_hamming_distances, 5)
+  print(f"5 padrões com maior distância de Hamming: {top_5_best}")
+
+  top_7_best = select_top_n_hamming_distances(all_hamming_distances, 7)
+  print(f"7 padrões com maior distância de Hamming: {top_7_best}")
+
+  #digits_3_best = [pattern_to_vector(digits[d]) for d in top_3_best]
+  digits_3_best = [pattern_to_vector(digits[top_3_best[0]]),pattern_to_vector(digits[top_3_best[1]]), pattern_to_vector(digits[top_3_best[2]])]
+  #print(digits_3_best)
+  hopfield = HopfieldNetwork(size=len(digits_3_best[0]))
+  hopfield.train(digits_3_best)
+
+  noise_levels = [0, 5, 10, 20, 30, 40, 50]
+  accuracy_results_3_best = []
+
+  for noise in noise_levels:
+    correct_recognitions = 0
+    total_tests = 5 * len(digits_3_best)  # 5 testes por padrão
+    print(total_tests)
+    for pattern in digits_3_best:
+      for _ in range(5):
+        noisy_pattern = add_noise(pattern, noise / 100)
+        recalled_pattern = hopfield.recall(noisy_pattern)
+        if np.array_equal(recalled_pattern, pattern):
+          correct_recognitions += 1
+        # else:
+        #   plot_matriz(np.array(recalled_pattern).reshape(12, 10))
+    accuracy = (correct_recognitions / total_tests) * 100
+    accuracy_results_3_best.append(accuracy)
+
+  digits_3_worst = [pattern_to_vector(digits[d]) for d in top_3_worst]
+  hopfield = HopfieldNetwork(size=len(digits_3_worst[0]))
+  hopfield.train(digits_3_worst)
+
+  accuracy_results_3_worst = []
+
+  for noise in noise_levels:
+    correct_recognitions = 0
+    total_tests = 5 * len(digits_3_worst)  
+    for pattern in digits_3_worst:
+      for _ in range(5):
+        noisy_pattern = add_noise(pattern, noise / 100)
+        recalled_pattern = hopfield.recall(noisy_pattern)
+        if np.array_equal(recalled_pattern, pattern):
+          correct_recognitions += 1
+        # else:
+        #   plot_matriz(np.array(recalled_pattern).reshape(12, 10))
+    accuracy = (correct_recognitions / total_tests) * 100
+    accuracy_results_3_worst.append(accuracy)
 
 
-#digits_3_best = [pattern_to_vector(digits[d]) for d in top_3_best]
-digits_3_best = [pattern_to_vector(digits[top_3_best[0]]),pattern_to_vector(digits[top_3_best[1]]), pattern_to_vector(digits[top_3_best[2]])]
-#print(digits_3_best)
-hopfield = HopfieldNetwork(size=len(digits_3_best[0]))
-hopfield.train(digits_3_best)
+  digits_5_best = [pattern_to_vector(digits[d]) for d in top_5_best]
 
-noise_levels = [0, 5, 10, 20, 30, 40, 50]
-accuracy_results_3_best = []
+  hopfield = HopfieldNetwork(size=len(digits_5_best[0]))
+  hopfield.train(digits_5_best)
 
-for noise in noise_levels:
-  correct_recognitions = 0
-  total_tests = 5 * len(digits_3_best)  # 5 testes por padrão
-  print(total_tests)
-  for pattern in digits_3_best:
-    for _ in range(5):
-      noisy_pattern = add_noise(pattern, noise / 100)
-      recalled_pattern = hopfield.recall(noisy_pattern)
-      if np.array_equal(recalled_pattern, pattern):
-        correct_recognitions += 1
-      else:
-        plot_matriz(np.array(recalled_pattern).reshape(12, 10))
-  accuracy = (correct_recognitions / total_tests) * 100
-  accuracy_results_3_best.append(accuracy)
+  accuracy_results_5_best = []
 
-digits_3_worst = [pattern_to_vector(digits[d]) for d in top_3_worst]
-hopfield = HopfieldNetwork(size=len(digits_3_worst[0]))
-hopfield.train(digits_3_worst)
+  for noise in noise_levels:
+    correct_recognitions = 0
+    total_tests = 5 * len(digits_5_best)  # 5 testes por padrão
+    for pattern in digits_5_best:
+      for _ in range(5):
+        noisy_pattern = add_noise(pattern, noise / 100)
+        recalled_pattern = hopfield.recall(noisy_pattern)
+        if np.array_equal(recalled_pattern, pattern):
+          correct_recognitions += 1
+        # else:
+        #   plot_matriz(np.array(recalled_pattern).reshape(12, 10))
+    accuracy = (correct_recognitions / total_tests) * 100
+    accuracy_results_5_best.append(accuracy)
 
-accuracy_results_3_worst = []
+  digits_7_best = [pattern_to_vector(digits[d]) for d in top_7_best]
 
-for noise in noise_levels:
-  correct_recognitions = 0
-  total_tests = 5 * len(digits_3_worst)  
-  for pattern in digits_3_worst:
-    for _ in range(5):
-      noisy_pattern = add_noise(pattern, noise / 100)
-      recalled_pattern = hopfield.recall(noisy_pattern)
-      if np.array_equal(recalled_pattern, pattern):
-        correct_recognitions += 1
-      else:
-        plot_matriz(np.array(recalled_pattern).reshape(12, 10))
-  accuracy = (correct_recognitions / total_tests) * 100
-  accuracy_results_3_worst.append(accuracy)
+  hopfield = HopfieldNetwork(size=len(digits_7_best[0]))
+  hopfield.train(digits_7_best)
 
+  noise_levels = [0, 5, 10, 20, 30, 40, 50]
+  accuracy_results_7_best = []
 
-digits_5_best = [pattern_to_vector(digits[d]) for d in top_5_best]
-
-hopfield = HopfieldNetwork(size=len(digits_5_best[0]))
-hopfield.train(digits_5_best)
-
-accuracy_results_5_best = []
-
-for noise in noise_levels:
-  correct_recognitions = 0
-  total_tests = 5 * len(digits_5_best)  # 5 testes por padrão
-  for pattern in digits_5_best:
-    for _ in range(5):
-      noisy_pattern = add_noise(pattern, noise / 100)
-      recalled_pattern = hopfield.recall(noisy_pattern)
-      if np.array_equal(recalled_pattern, pattern):
-        correct_recognitions += 1
-      else:
-        plot_matriz(np.array(recalled_pattern).reshape(12, 10))
-  accuracy = (correct_recognitions / total_tests) * 100
-  accuracy_results_5_best.append(accuracy)
-
-digits_7_best = [pattern_to_vector(digits[d]) for d in top_7_best]
-
-hopfield = HopfieldNetwork(size=len(digits_7_best[0]))
-hopfield.train(digits_7_best)
-
-noise_levels = [0, 5, 10, 20, 30, 40, 50]
-accuracy_results_7_best = []
-
-for noise in noise_levels:
-  correct_recognitions = 0
-  total_tests = 5 * len(digits_7_best)  # 5 testes por padrão
-  for pattern in digits_7_best:
-    for _ in range(5):
-      noisy_pattern = add_noise(pattern, noise / 100)
-      recalled_pattern = hopfield.recall(noisy_pattern)
-      if np.array_equal(recalled_pattern, pattern):
-        correct_recognitions += 1
-      #else:
-        #plot_matriz(np.array(recalled_pattern).reshape(12, 10))
-  accuracy = (correct_recognitions / total_tests) * 100
-  accuracy_results_7_best.append(accuracy)
+  for noise in noise_levels:
+    correct_recognitions = 0
+    total_tests = 5 * len(digits_7_best)  # 5 testes por padrão
+    for pattern in digits_7_best:
+      for _ in range(5):
+        noisy_pattern = add_noise(pattern, noise / 100)
+        recalled_pattern = hopfield.recall(noisy_pattern)
+        if np.array_equal(recalled_pattern, pattern):
+          correct_recognitions += 1
+        #else:
+          #plot_matriz(np.array(recalled_pattern).reshape(12, 10))
+    accuracy = (correct_recognitions / total_tests) * 100
+    accuracy_results_7_best.append(accuracy)
 
 
-digits_10 = [pattern_to_vector(digits[d]) for d in range(10)]
+  digits_10 = [pattern_to_vector(digits[d]) for d in range(10)]
 
-hopfield = HopfieldNetwork(size=len(digits_10[0]))
-hopfield.train(digits_10)
+  hopfield = HopfieldNetwork(size=len(digits_10[0]))
+  hopfield.train(digits_10)
 
-accuracy_results_10 = []
+  accuracy_results_10 = []
 
-for noise in noise_levels:
-  correct_recognitions = 0
-  total_tests = 5 * len(digits_10)  # 5 testes por padrão
-  for pattern in digits_10:
-    for _ in range(5):
-      noisy_pattern = add_noise(pattern, noise / 100)
-      recalled_pattern = hopfield.recall(noisy_pattern)
-      if np.array_equal(recalled_pattern, pattern):
-        correct_recognitions += 1
-      #else:
-        #plot_matriz(np.array(recalled_pattern).reshape(12, 10))
-  accuracy = (correct_recognitions / total_tests) * 100
-  accuracy_results_10.append(accuracy)
+  for noise in noise_levels:
+    correct_recognitions = 0
+    total_tests = 5 * len(digits_10)  # 5 testes por padrão
+    for pattern in digits_10:
+      for _ in range(5):
+        noisy_pattern = add_noise(pattern, noise / 100)
+        recalled_pattern = hopfield.recall(noisy_pattern)
+        if np.array_equal(recalled_pattern, pattern):
+          correct_recognitions += 1
+        #else:
+          #plot_matriz(np.array(recalled_pattern).reshape(12, 10))
+    accuracy = (correct_recognitions / total_tests) * 100
+    accuracy_results_10.append(accuracy)
 
-# Plotar gráfico de desempenho
-plt.plot(noise_levels, accuracy_results_3_best, marker='s', linestyle='-', label="3 Padrões mais próximos")
-plt.plot(noise_levels, accuracy_results_3_worst, marker='o', linestyle='-', label="3 Padrões Mais distantes")
-plt.plot(noise_levels, accuracy_results_5_best, marker='*', linestyle='-', label="5 Padrões mais próximos")
-plt.plot(noise_levels, accuracy_results_7_best, marker='h', linestyle='-', label="7 Padrões mais próximos")
-plt.plot(noise_levels, accuracy_results_10, marker='^', linestyle='-', label="10 Padrões")
-plt.xlabel("Nível de Ruído (%)")
-plt.ylabel("Percentual de Acerto (%)")
-plt.title("Desempenho da Rede Hopfield na Recuperação de Padrões")
-plt.legend()
-plt.grid()
-plt.show()
+  # Plotar gráfico de desempenho
+  plt.plot(noise_levels, accuracy_results_3_best, marker='s', linestyle='-', label="3 Padrões mais próximos")
+  plt.plot(noise_levels, accuracy_results_3_worst, marker='o', linestyle='-', label="3 Padrões Mais distantes")
+  plt.plot(noise_levels, accuracy_results_5_best, marker='*', linestyle='-', label="5 Padrões mais próximos")
+  plt.plot(noise_levels, accuracy_results_7_best, marker='h', linestyle='-', label="7 Padrões mais próximos")
+  plt.plot(noise_levels, accuracy_results_10, marker='^', linestyle='-', label="10 Padrões")
+  plt.xlabel("Nível de Ruído (%)")
+  plt.ylabel("Percentual de Acerto (%)")
+  plt.title("Desempenho da Rede Hopfield na Recuperação de Padrões")
+  plt.legend()
+  plt.grid()
+  plt.show()
