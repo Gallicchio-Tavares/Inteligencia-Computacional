@@ -1,8 +1,8 @@
 import numpy as np
+import tensorflow as tf
 from tensorflow.keras.models import Sequential # type: ignore
 from tensorflow.keras.layers import Dense # type: ignore
 from tensorflow.keras.optimizers import SGD # type: ignore
-
 # Funções para mapear dígitos com ruídos diferentes
 def create_bit_maps():
     bitmaps = {
@@ -85,14 +85,19 @@ def generate_noisy_bitmaps(bitmaps, noise_levels):
 
 # Função para treinar a rede neural
 def train_network(input_data, target_data, hidden_neurons, learning_rate, momentum, epochs):
+    dataset = tf.data.Dataset.from_tensor_slices((input_data, target_data))
+    dataset = dataset.shuffle(len(input_data)).batch(16).prefetch(tf.data.AUTOTUNE)
+
     model = Sequential([
-        Dense(hidden_neurons, activation="tanh", input_dim=input_data.shape[1]), # usa tansig (camada oculta)
-        Dense(target_data.shape[1], activation="linear") # usa purelin na camada de saida
+        Dense(hidden_neurons, activation="tanh", input_dim=input_data.shape[1]),
+        Dense(target_data.shape[1], activation="linear")
     ])
     optimizer = SGD(learning_rate=learning_rate, momentum=momentum)
     model.compile(optimizer=optimizer, loss="mean_squared_error")
-    model.fit(input_data, target_data, epochs=epochs, verbose=1)
+
+    model.fit(dataset, epochs=epochs, verbose=1)
     return model
+
 
 bitmaps = create_bit_maps() 
 noisy_bitmaps = generate_noisy_bitmaps(bitmaps, noise_levels=[0, 1, 2, 3]) #definindo os ruidos de 0 a 3
