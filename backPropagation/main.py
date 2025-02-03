@@ -133,6 +133,6 @@ for network in networks:
         with open(filename, "w", encoding="utf-8") as f:
             for noise_level, predictions in results.items():
                 f.write(f"Resultados com {noise_level} ruídos:\n")
-                f.write(np.array2string(predictions, precision=4, suppress_small=True, linewidth=np.inf))
+                f.write(np.array2string(predictions, precision=4, suppress_small=True, max_line_width=np.inf))
                 f.write("\n\n")
         print(f"Resultados salvos em {filename}\n")
