@@ -207,46 +207,61 @@ class HopfieldNetwork:
     self.size = size
     self.weights = np.zeros((size, size))
 
-  def train(self, patterns):
+  def train(self, patterns:list[np.ndarray]):
     """Treina a rede com os padrões binários."""
     for pattern in patterns:
-        p = pattern.reshape(-1, 1) * 2 - 1  # Converter para {-1, 1}
+        p = np.where(pattern == 0, -1, pattern) # Converter para {-1, 1}
+        p = p.reshape(-1, 1)
         self.weights += np.outer(p, p)
     np.fill_diagonal(self.weights, 0)  # Zerar a diagonal
 
-  def recall(self, pattern, max_iter=10):
+  def recall(self, pattern, max_iter=10, synchronous = True):
     """Executa o processo de recuperação do padrão."""
-    recalled = pattern.copy()
+    state = pattern.copy()
+    state = np.where(state == 0, -1, state)
+    # print("recalling")
     for _ in range(max_iter):
-        recalled = np.sign(self.weights @ recalled) #Multiplicação matricial
-    return (recalled + 1) // 2  # Converter de {-1,1} para {0,1}
+        new_state = self.update(state,synchronous)
+        if np.array_equal(state,new_state): break #convergiu
+        state = new_state
+        # print(self.energy(state))
+    return state
+  
+  def update(self, state, synchronous=True):
+        """
+        Update the network state using synchronous or asynchronous rule.
+        """
+        if synchronous:
+            # All neurons update at once
+            new_state = np.sign(self.weights @ state)
+            new_state[new_state == 0] = 1  # Avoid zero states
+            return new_state
+        else:
+            # Asynchronous update (one neuron at a time)
+            new_state = np.copy(state)
+            for i in range(self.size):
+                new_state[i] = np.sign(np.dot(self.weights[i], new_state))
+                if new_state[i] == 0:
+                    new_state[i] = 1
+            return new_state
+  
+  def energy(self, state):
+        """
+        Computes the energy of the current state.
+        Lower energy indicates stable states.
+        """
+        return -0.5 * np.dot(state, np.dot(self.weights, state))
 
-class HopfieldNetwork:
-  def __init__(self, size):
-    self.size = size
-    self.weights = np.zeros((size, size))
-
-  def train(self, patterns):
-    """Treina a rede com os padrões binários."""
-    for pattern in patterns:
-        p = pattern.reshape(-1, 1) * 2 - 1  # Converter para {-1, 1}
-        self.weights += np.outer(p, p)
-    np.fill_diagonal(self.weights, 0)  # Zerar a diagonal
-
-  def recall(self, pattern, max_iter=10):
-    """Executa o processo de recuperação do padrão."""
-    recalled = pattern.copy()
-    for _ in range(max_iter):
-        recalled = np.sign(self.weights @ recalled) #Multiplicação matricial
-    return (recalled + 1) // 2  # Converter de {-1,1} para {0,1}
-
+#================#
+# código da main #
+#================#
 if __name__ == '__main__':  
   digits = create_digits()
 
-  for i in range(10):
-    plot_matriz(digits[i])
+  # for i in range(10):
+  #   plot_matriz(digits[i])
 
-  plot_matriz(add_noise(digits[0], 0.1)) #Exemplo do dígito 0 com 10% de ruído
+  # plot_matriz(add_noise(digits[0], 0.1)) #Exemplo do dígito 0 com 10% de ruído
 
   all_hamming_distances = {}
   for i in range(10):
@@ -282,15 +297,18 @@ if __name__ == '__main__':
   for noise in noise_levels:
     correct_recognitions = 0
     total_tests = 5 * len(digits_3_best)  # 5 testes por padrão
-    print(total_tests)
+    # print(total_tests)
     for pattern in digits_3_best:
       for _ in range(5):
         noisy_pattern = add_noise(pattern, noise / 100)
-        recalled_pattern = hopfield.recall(noisy_pattern)
+        recalled_pattern = hopfield.recall(noisy_pattern)#, synchronous=False)
+        recalled_pattern = np.where(recalled_pattern == -1,0,recalled_pattern)
         if np.array_equal(recalled_pattern, pattern):
           correct_recognitions += 1
         # else:
+        #   plot_matriz(np.reshape(np.where(recalled_pattern!=pattern,1,0),(12,10)))
         #   plot_matriz(np.array(recalled_pattern).reshape(12, 10))
+        #   plot_matriz(np.array(pattern).reshape(12, 10))
     accuracy = (correct_recognitions / total_tests) * 100
     accuracy_results_3_best.append(accuracy)
 
@@ -306,7 +324,8 @@ if __name__ == '__main__':
     for pattern in digits_3_worst:
       for _ in range(5):
         noisy_pattern = add_noise(pattern, noise / 100)
-        recalled_pattern = hopfield.recall(noisy_pattern)
+        recalled_pattern = hopfield.recall(noisy_pattern)#, synchronous=False)
+        recalled_pattern = np.where(recalled_pattern == -1,0,recalled_pattern)
         if np.array_equal(recalled_pattern, pattern):
           correct_recognitions += 1
         # else:
@@ -328,7 +347,8 @@ if __name__ == '__main__':
     for pattern in digits_5_best:
       for _ in range(5):
         noisy_pattern = add_noise(pattern, noise / 100)
-        recalled_pattern = hopfield.recall(noisy_pattern)
+        recalled_pattern = hopfield.recall(noisy_pattern)#, synchronous=False)
+        recalled_pattern = np.where(recalled_pattern == -1,0,recalled_pattern)
         if np.array_equal(recalled_pattern, pattern):
           correct_recognitions += 1
         # else:
@@ -350,7 +370,8 @@ if __name__ == '__main__':
     for pattern in digits_7_best:
       for _ in range(5):
         noisy_pattern = add_noise(pattern, noise / 100)
-        recalled_pattern = hopfield.recall(noisy_pattern)
+        recalled_pattern = hopfield.recall(noisy_pattern)#, synchronous=False)
+        recalled_pattern = np.where(recalled_pattern == -1,0,recalled_pattern)
         if np.array_equal(recalled_pattern, pattern):
           correct_recognitions += 1
         #else:
@@ -362,7 +383,8 @@ if __name__ == '__main__':
   digits_10 = [pattern_to_vector(digits[d]) for d in range(10)]
 
   hopfield = HopfieldNetwork(size=len(digits_10[0]))
-  hopfield.train(digits_10)
+  for _ in range(10000):
+    hopfield.train(digits_10)
 
   accuracy_results_10 = []
 
@@ -372,11 +394,15 @@ if __name__ == '__main__':
     for pattern in digits_10:
       for _ in range(5):
         noisy_pattern = add_noise(pattern, noise / 100)
-        recalled_pattern = hopfield.recall(noisy_pattern)
+        recalled_pattern = hopfield.recall(noisy_pattern)#, synchronous=False)
+        recalled_pattern = np.where(recalled_pattern == -1,0,recalled_pattern)
         if np.array_equal(recalled_pattern, pattern):
           correct_recognitions += 1
-        #else:
-          #plot_matriz(np.array(recalled_pattern).reshape(12, 10))
+        # else:
+        #   print("detectou:")
+        #   plot_matriz(np.array(recalled_pattern).reshape(12, 10))
+        #   print("era:")
+        #   plot_matriz(np.array(pattern).reshape(12, 10))
     accuracy = (correct_recognitions / total_tests) * 100
     accuracy_results_10.append(accuracy)
 
